@@ -6,7 +6,7 @@ public class MyOVRRayHelper : MonoBehaviour {
 	// イベントを左右コントローラー切り替えに対応
 	// ------------------------------------------------------------------------------------------
 	void Update() {
-		if (Time.frameCount % 60 != 0) { return; }
+		if (Time.frameCount % 300 != 0) { return; }
 		
 		var rayTransform = MyOVRRayHelper.GetController();
 
