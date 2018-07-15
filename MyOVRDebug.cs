@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class MyOVRDebug {
+public class MyOVRDebug  : MonoBehaviour {
 	// コンソール表示
 	// ------------------------------------------------------------------------------------------
 	private static bool _consoleInit = false;
