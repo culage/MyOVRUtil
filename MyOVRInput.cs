@@ -37,6 +37,7 @@ public class MyOVRInput : MonoBehaviour {
 	// ------------------------------------------------------------------------------------------
 	private static Dictionary<OVRInput.Button, KeyCode> _buttonKeycodeMap = null;
 	private static Dictionary<OVRInput.Touch , KeyCode> _touchKeycodeMap = null;
+	private static KeyCode _reCenterKeyMap;
 	// Init
 	public static void InitOVRInput() {
 		if (_buttonKeycodeMap != null) { return; }
@@ -55,6 +56,8 @@ public class MyOVRInput : MonoBehaviour {
 		_touchKeycodeMap = new Dictionary<OVRInput.Touch, KeyCode>();
 		_touchKeycodeMap.Add(OVRInput.Touch.PrimaryTouchpad, KeyCode.LeftShift);
 		_touchKeycodeMap.Add(OVRInput.Touch.One            , KeyCode.LeftShift);
+
+		_reCenterKeyMap = KeyCode.Tab;
 	}
 	// Get - Button
 	public static bool Get(OVRInput.Button input) {
@@ -111,6 +114,11 @@ public class MyOVRInput : MonoBehaviour {
 			if (Input.GetKeyUp(_touchKeycodeMap[input])) { return true; }
 		}
 		return OVRInput.GetUp(input);
+	}
+	// Recenter
+	public static bool GetControllerWasRecentered() {
+		return OVRInput.GetControllerWasRecentered(OVRInput.GetActiveController()) ||
+			   Input.GetKeyDown(_reCenterKeyMap);
 	}
 	// Axisを方向に変換
 	public static KeyCode Axis2Arrow(Vector2 axis) {
