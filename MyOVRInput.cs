@@ -44,8 +44,8 @@ public class MyOVRInput : MonoBehaviour {
 		
 		_buttonKeycodeMap = new Dictionary<OVRInput.Button, KeyCode>();
 		_buttonKeycodeMap.Add(OVRInput.Button.PrimaryIndexTrigger, KeyCode.Space);
-		_buttonKeycodeMap.Add(OVRInput.Button.PrimaryTouchpad    , KeyCode.LeftControl);
-		_buttonKeycodeMap.Add(OVRInput.Button.One                , KeyCode.LeftControl);
+		_buttonKeycodeMap.Add(OVRInput.Button.PrimaryTouchpad    , KeyCode.Return);
+		_buttonKeycodeMap.Add(OVRInput.Button.One                , KeyCode.Return);
 		_buttonKeycodeMap.Add(OVRInput.Button.Back               , KeyCode.Escape); // OculusGoコントローラーの戻るボタンは、OVRInput.Button.Backでは取れない。あれは「Androidの戻るボタン」なのでKeyCode.Escapeで取れる
 		_buttonKeycodeMap.Add(OVRInput.Button.Two                , KeyCode.Escape);
 		_buttonKeycodeMap.Add(OVRInput.Button.Up                 , KeyCode.T);
