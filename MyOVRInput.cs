@@ -48,10 +48,6 @@ public class MyOVRInput : MonoBehaviour {
 		_buttonKeycodeMap.Add(OVRInput.Button.One                , KeyCode.Return);
 		_buttonKeycodeMap.Add(OVRInput.Button.Back               , KeyCode.Escape); // OculusGoコントローラーの戻るボタンは、OVRInput.Button.Backでは取れない。あれは「Androidの戻るボタン」なのでKeyCode.Escapeで取れる
 		_buttonKeycodeMap.Add(OVRInput.Button.Two                , KeyCode.Escape);
-		_buttonKeycodeMap.Add(OVRInput.Button.Up                 , KeyCode.T);
-		_buttonKeycodeMap.Add(OVRInput.Button.Down               , KeyCode.G);
-		_buttonKeycodeMap.Add(OVRInput.Button.Right              , KeyCode.H);
-		_buttonKeycodeMap.Add(OVRInput.Button.Left               , KeyCode.F);
 
 		_touchKeycodeMap = new Dictionary<OVRInput.Touch, KeyCode>();
 		_touchKeycodeMap.Add(OVRInput.Touch.PrimaryTouchpad, KeyCode.LeftShift);
@@ -127,5 +123,123 @@ public class MyOVRInput : MonoBehaviour {
 		if (axis.y > 0.6 && (-0.5 < axis.x && axis.x< 0.5)) { return KeyCode.UpArrow;    } // 上は反応しづらい
 		if (axis.y< -0.7 && (-0.5 < axis.x && axis.x< 0.5)) { return KeyCode.DownArrow;  }
 		return KeyCode.None;
+	}
+	// スワイプを取得
+	static class OldInputValue {
+		private static int _savedFrameCount;
+		private static bool _nowIsTouch, _oldIsTouch;
+		private static Vector2 _nowAxis, _oldAxis;
+		private static Vector2 _touchStartAxis;
+		private static List<Dictionary<KeyCode, bool>> _swipeHistory = new List<Dictionary<KeyCode, bool>>();
+
+		public static bool    isTouch        { get{ ShiftOldValue(); return _oldIsTouch;     } }
+		public static Vector2 axis           { get{ ShiftOldValue(); return _oldAxis;        } }
+		public static Vector2 touchStartAxis { get{ ShiftOldValue(); return _touchStartAxis; } }
+		public static List<Dictionary<KeyCode, bool>> swipeHistory {
+			get {
+				ShiftOldValue();
+				return _swipeHistory;
+			}
+		}
+
+		public static void SaveOld(bool isTouch, Vector2 axis, Dictionary<KeyCode, bool> swipeResult) {
+			_savedFrameCount = Time.frameCount;
+			_nowIsTouch = isTouch;
+			_nowAxis    = axis;
+
+			_swipeHistory.Add( new Dictionary<KeyCode, bool>(swipeResult) );
+			if (_swipeHistory.Count > 60) { _swipeHistory.RemoveAt(0); }
+
+			if (_oldIsTouch == false && isTouch == true) {
+				_touchStartAxis = axis;
+			}
+		}
+		public static bool IsNewFrame() {
+			return _savedFrameCount != Time.frameCount;
+		}
+		private static void ShiftOldValue() {
+			if (IsNewFrame()) {
+				_oldIsTouch     = _nowIsTouch;
+				_oldAxis        = _nowAxis;
+			}
+		}
+		public static void FillSwipeHistory(KeyCode swipeArrow, bool fillValue) {
+			foreach(var swipe in _swipeHistory) {
+				swipe[swipeArrow] = fillValue;
+			}
+		}
+	}
+	private static Dictionary<KeyCode, bool> _swipeResult = new Dictionary<KeyCode, bool>();
+	public static bool GetSwipe(KeyCode swipeArrow) {
+		if (OldInputValue.IsNewFrame()) {
+			_swipeResult[KeyCode.RightArrow] = false;
+			_swipeResult[KeyCode.LeftArrow ] = false;
+			_swipeResult[KeyCode.UpArrow   ] = false;
+			_swipeResult[KeyCode.DownArrow ] = false;
+
+			if (Input.GetKey(KeyCode.H)) { _swipeResult[KeyCode.RightArrow] = true; }
+			if (Input.GetKey(KeyCode.F)) { _swipeResult[KeyCode.LeftArrow ] = true; }
+			if (Input.GetKey(KeyCode.T)) { _swipeResult[KeyCode.UpArrow   ] = true; }
+			if (Input.GetKey(KeyCode.G)) { _swipeResult[KeyCode.DownArrow ] = true; }
+
+			bool isTouch = OVRInput.Get(OVRInput.Touch.PrimaryTouchpad);
+			Vector2 axis = OVRInput.Get(OVRInput.Axis2D.PrimaryTouchpad);
+
+			if (OldInputValue.isTouch && isTouch &&
+				(OldInputValue.touchStartAxis - axis).magnitude >= 0.1) {
+				if (OldInputValue.axis.x < axis.x) { _swipeResult[KeyCode.RightArrow] = true; }
+				if (OldInputValue.axis.x > axis.x) { _swipeResult[KeyCode.LeftArrow ] = true; }
+				if (OldInputValue.axis.y < axis.y) { _swipeResult[KeyCode.UpArrow   ] = true; }
+				if (OldInputValue.axis.y > axis.y) { _swipeResult[KeyCode.DownArrow ] = true; }
+			}
+
+			OldInputValue.SaveOld(isTouch, axis, _swipeResult);
+		}
+
+		return _swipeResult[swipeArrow];
+	}
+	// スワイプ開始を取得
+	public static bool GetSwipeDown(KeyCode swipeArrow) {
+		int prev1OnCount = 0;
+		int prev2OffCount = 0;
+
+		int i=OldInputValue.swipeHistory.Count - 1;
+		for(; i >= 0; i--) {
+			var swipe = OldInputValue.swipeHistory[i];
+			if (swipe[swipeArrow] == true) { prev1OnCount++; }
+			else { break; }
+		}
+		for(; i >= 0; i--) {
+			var swipe = OldInputValue.swipeHistory[i];
+			if (swipe[swipeArrow] == false) { prev2OffCount++; }
+			else { break; }
+		}
+
+		// 10フレーム以上スワイプしてない→10フレーム以上スワイプしてる……のとき
+		bool result = (prev2OffCount >= 10 && prev1OnCount >= 10);
+		if (result) { OldInputValue.FillSwipeHistory(swipeArrow, true); }
+		return result;
+	}
+	// スワイプ終了を取得
+	public static bool GetSwipeUp(KeyCode swipeArrow) {
+		int prev1OffCount = 0;
+		int prev2OnCount = 0;
+
+		int i=OldInputValue.swipeHistory.Count - 1;
+		for(; i >= 0; i--) {
+			var swipe = OldInputValue.swipeHistory[i];
+			if (swipe[swipeArrow] == false) { prev1OffCount++; }
+			else { break; }
+		}
+		for(; i >= 0; i--) {
+			var swipe = OldInputValue.swipeHistory[i];
+			if (swipe[swipeArrow] == true) { prev2OnCount++; }
+			else { break; }
+		}
+
+		// 10フレーム以上スワイプしてる→10フレーム以上スワイプしてない……のとき
+		bool result = (prev2OnCount >= 10 && prev1OffCount >= 10);
+		if (result) { OldInputValue.FillSwipeHistory(swipeArrow, false); }
+		return result;
 	}
 }
