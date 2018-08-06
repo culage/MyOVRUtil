@@ -80,10 +80,20 @@ public class MyOVRInput : MonoBehaviour {
 		return OVRInput.Get(input);
 	}
 	// GetDown - Button
+	private static int _lastEscapeFrame = 0;
 	public static bool GetDown(OVRInput.Button input) {
 		InitOVRInput();
 		if (_buttonKeycodeMap.ContainsKey(input)) {
-			if (Input.GetKeyDown(_buttonKeycodeMap[input])) { return true; }
+			KeyCode keyCode = _buttonKeycodeMap[input];
+			if (keyCode == KeyCode.Escape) {
+				// Escape(Backボタン)は何故か連続で押された判定になることがあるので、押した後一定時間押せなくする
+				if (Time.frameCount > _lastEscapeFrame + 5 && Input.GetKeyDown(KeyCode.Escape)) {
+					_lastEscapeFrame = Time.frameCount;
+					return true;
+				}
+			} else {
+				if (Input.GetKeyDown(keyCode)) { return true; }
+			}
 		}
 		return OVRInput.GetDown(input);
 	}
